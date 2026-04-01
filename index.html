@@ -5,159 +5,559 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Family Balance</title>
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#1a1a2e">
+    <meta name="theme-color" content="#0f172a">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        :root { --primary: #64FFDA; --secondary: #FF6B6B; --bg: #1a1a2e; --card: #16213e; }
-        body { background-color: var(--bg); color: white; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-        .glass-card { background: var(--card); border-radius: 1rem; border: 1px solid rgba(255,255,255,0.1); }
-        .fab { position: fixed; bottom: 2rem; right: 2rem; background: var(--primary); width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 25px rgba(100, 255, 218, 0.3); cursor: pointer; transition: transform 0.2s; }
-        .fab:active { transform: scale(0.9); }
-        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 50; align-items: center; justify-content: center; }
-        input, select { background: #0f3460 !important; color: white !important; border: 1px solid #533483 !important; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        :root { 
+            --primary: #64FFDA; 
+            --secondary: #FF6B6B; 
+            --bg: #0f172a; 
+            --card: rgba(30, 41, 59, 0.6);
+        }
+        
+        * {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body { 
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+            color: white;
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+        
+        body::before {
+            content: '';
+            position: fixed;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 50% 50%, rgba(100, 255, 218, 0.03) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 20%, rgba(255, 107, 107, 0.03) 0%, transparent 40%);
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        .glass-card { 
+            background: var(--card);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 1.25rem;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .glass-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+            border-color: rgba(255, 255, 255, 0.12);
+        }
+        
+        .balance-card {
+            background: linear-gradient(135deg, rgba(100, 255, 218, 0.1) 0%, rgba(30, 41, 59, 0.8) 100%);
+            border: 1px solid rgba(100, 255, 218, 0.2);
+        }
+        
+        .balance-card.negative {
+            background: linear-gradient(135deg, rgba(255, 107, 107, 0.1) 0%, rgba(30, 41, 59, 0.8) 100%);
+            border: 1px solid rgba(255, 107, 107, 0.2);
+        }
+        
+        .fab { 
+            position: fixed; 
+            bottom: 2rem; 
+            right: 2rem; 
+            background: linear-gradient(135deg, #64FFDA 0%, #00b4d8 100%);
+            width: 64px; 
+            height: 64px; 
+            border-radius: 50%; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            box-shadow: 0 10px 30px rgba(100, 255, 218, 0.4),
+                        0 0 0 0 rgba(100, 255, 218, 0.4);
+            cursor: pointer; 
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 40;
+            border: none;
+        }
+        
+        .fab:hover {
+            transform: scale(1.1) rotate(90deg);
+            box-shadow: 0 15px 40px rgba(100, 255, 218, 0.5),
+                        0 0 0 10px rgba(100, 255, 218, 0.1);
+        }
+        
+        .fab:active { 
+            transform: scale(0.95) rotate(90deg);
+        }
+        
+        .modal { 
+            display: none; 
+            position: fixed; 
+            inset: 0; 
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(10px);
+            z-index: 50; 
+            align-items: center; 
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .modal.active {
+            opacity: 1;
+        }
+        
+        .modal-content {
+            transform: scale(0.9) translateY(20px);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .modal.active .modal-content {
+            transform: scale(1) translateY(0);
+        }
+        
+        input, select { 
+            background: rgba(15, 23, 42, 0.8) !important; 
+            color: white !important; 
+            border: 1px solid rgba(100, 255, 218, 0.2) !important;
+            transition: all 0.3s ease;
+        }
+        
+        input:focus, select:focus {
+            border-color: rgba(100, 255, 218, 0.6) !important;
+            box-shadow: 0 0 0 3px rgba(100, 255, 218, 0.1);
+            outline: none;
+        }
+        
+        .transaction-item {
+            animation: slideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
+        
+        .animate-pulse-soft {
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        .delete-btn {
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+        
+        .transaction-item:hover .delete-btn {
+            opacity: 1;
+        }
+        
+        .amount-display {
+            font-variant-numeric: tabular-nums;
+            letter-spacing: -0.02em;
+        }
+        
+        .empty-state {
+            animation: float 6s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        .stat-card {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .stat-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, currentColor, transparent);
+            opacity: 0.5;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #64FFDA 0%, #00b4d8 100%);
+            color: #0f172a;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn-primary::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.5s;
+        }
+        
+        .btn-primary:hover::before {
+            left: 100%;
+        }
+        
+        .btn-primary:active {
+            transform: scale(0.98);
+        }
+        
+        .type-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            background: rgba(255,255,255,0.1);
+        }
+        
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.5);
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: rgba(100, 255, 218, 0.3);
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(100, 255, 218, 0.5);
+        }
     </style>
 </head>
-<body class="p-4 pb-24">
+<body class="p-4 pb-24 relative z-10">
 
-    <header class="text-center my-8">
-        <h1 id="netBalance" class="text-5xl font-bold transition-all duration-500">₹0.00</h1>
-        <p id="balanceHint" class="text-sm mt-2 opacity-80 uppercase tracking-widest">All Settled Up ✓</p>
+    <header class="text-center my-8 relative">
+        <div class="absolute inset-0 blur-3xl bg-gradient-to-r from-teal-500/20 to-rose-500/20 -z-10"></div>
+        <div class="glass-card balance-card inline-block px-8 py-6 mb-4">
+            <p class="text-xs uppercase tracking-widest opacity-60 mb-2">Net Balance</p>
+            <h1 id="netBalance" class="text-5xl font-bold amount-display transition-all duration-500 bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">₹0.00</h1>
+        </div>
+        <p id="balanceHint" class="text-sm font-medium uppercase tracking-wider opacity-80 flex items-center justify-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            All Settled Up ✓
+        </p>
     </header>
 
-    <div class="grid grid-cols-2 gap-4 mb-8">
-        <div class="glass-card p-4 text-center">
-            <p class="text-xs opacity-60">YOU OWE</p>
-            <p id="youOwe" class="text-lg font-semibold text-red-400">₹0.00</p>
+    <div class="grid grid-cols-2 gap-4 mb-8 max-w-md mx-auto">
+        <div class="glass-card stat-card p-4 text-center border-t-2 border-rose-400/50">
+            <p class="text-[10px] font-semibold uppercase tracking-widest opacity-60 mb-1">You Owe</p>
+            <p id="youOwe" class="text-xl font-bold amount-display text-rose-400">₹0.00</p>
         </div>
-        <div class="glass-card p-4 text-center">
-            <p class="text-xs opacity-60">THEY OWE</p>
-            <p id="theyOwe" class="text-lg font-semibold text-teal-400">₹0.00</p>
-        </div>
-    </div>
-
-    <div id="transactionContainer" class="space-y-4">
-        <div id="emptyState" class="text-center opacity-30 mt-20">
-            <p class="text-4xl mb-2">📒</p>
-            <p>No transactions yet.</p>
+        <div class="glass-card stat-card p-4 text-center border-t-2 border-teal-400/50">
+            <p class="text-[10px] font-semibold uppercase tracking-widest opacity-60 mb-1">They Owe</p>
+            <p id="theyOwe" class="text-xl font-bold amount-display text-teal-400">₹0.00</p>
         </div>
     </div>
 
-    <div class="fab" onclick="toggleModal(true)">
-        <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#1a1a2e" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+    <div class="max-w-md mx-auto">
+        <div class="flex items-center justify-between mb-4 px-2">
+            <h3 class="text-sm font-semibold uppercase tracking-wider opacity-60">Recent Transactions</h3>
+            <span id="transactionCount" class="text-xs bg-white/10 px-2 py-1 rounded-full">0</span>
+        </div>
+        
+        <div id="transactionContainer" class="space-y-3">
+            <div id="emptyState" class="empty-state text-center opacity-40 mt-16 py-12 glass-card">
+                <div class="text-5xl mb-4">📒</div>
+                <p class="text-sm font-medium">No transactions yet</p>
+                <p class="text-xs mt-2 opacity-60">Tap + to add your first transaction</p>
+            </div>
+        </div>
     </div>
 
-    <div id="modal" class="modal p-4">
-        <div class="glass-card w-full max-w-md p-6 space-y-4">
-            <h2 class="text-xl font-bold">New Transaction</h2>
-            <input id="desc" type="text" placeholder="Description (e.g. Groceries)" class="w-full p-3 rounded-lg outline-none">
-            <input id="amt" type="number" placeholder="Amount (₹)" class="w-full p-3 rounded-lg outline-none">
+    <button class="fab" onclick="toggleModal(true)" aria-label="Add transaction">
+        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#0f172a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+    </button>
+
+    <div id="modal" class="modal p-4" onclick="if(event.target === this) toggleModal(false)">
+        <div class="modal-content glass-card w-full max-w-md p-6 space-y-4 border border-white/10">
+            <div class="flex items-center justify-between mb-2">
+                <h2 class="text-xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">New Transaction</h2>
+                <button onclick="toggleModal(false)" class="p-2 hover:bg-white/10 rounded-full transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
             
-            <select id="type" class="w-full p-3 rounded-lg outline-none">
-                <option value="MY_CC_CHARGE">💳 Family used MY credit card</option>
-                <option value="SEND_MONEY">💸 I sent money to family</option>
-                <option value="RECEIVE_MONEY">💰 Family sent money to me</option>
-                <option value="FAMILY_CC_CHARGE">🏦 I used FAMILY credit card</option>
-            </select>
+            <div class="space-y-4">
+                <div>
+                    <label class="text-xs font-medium uppercase tracking-wider opacity-60 mb-1 block">Description</label>
+                    <input id="desc" type="text" placeholder="e.g. Groceries, Rent, Dinner..." class="w-full p-3.5 rounded-xl outline-none text-sm">
+                </div>
+                
+                <div>
+                    <label class="text-xs font-medium uppercase tracking-wider opacity-60 mb-1 block">Amount (₹)</label>
+                    <input id="amt" type="number" placeholder="0.00" class="w-full p-3.5 rounded-xl outline-none text-lg font-semibold" step="0.01">
+                </div>
+                
+                <div>
+                    <label class="text-xs font-medium uppercase tracking-wider opacity-60 mb-1 block">Transaction Type</label>
+                    <select id="type" class="w-full p-3.5 rounded-xl outline-none text-sm appearance-none cursor-pointer">
+                        <option value="MY_CC_CHARGE">💳 Family used MY credit card</option>
+                        <option value="SEND_MONEY">💸 I sent money to family</option>
+                        <option value="RECEIVE_MONEY">💰 Family sent money to me</option>
+                        <option value="FAMILY_CC_CHARGE">🏦 I used FAMILY credit card</option>
+                    </select>
+                </div>
+            </div>
 
             <div class="flex space-x-3 pt-4">
-                <button onclick="toggleModal(false)" class="flex-1 p-3 opacity-60">Cancel</button>
-                <button onclick="saveTransaction()" class="flex-1 p-3 bg-teal-400 text-slate-900 font-bold rounded-lg">Save</button>
+                <button onclick="toggleModal(false)" class="flex-1 p-3.5 rounded-xl font-medium opacity-60 hover:opacity-100 hover:bg-white/5 transition-all">Cancel</button>
+                <button onclick="saveTransaction()" class="flex-1 p-3.5 btn-primary rounded-xl">Save Transaction</button>
             </div>
         </div>
     </div>
 
     <script>
         const types = {
-            MY_CC_CHARGE: { label: "Family used your CC", emoji: "💳", factor: 1 },
-            SEND_MONEY: { label: "You sent money", emoji: "💸", factor: 1 },
-            RECEIVE_MONEY: { label: "Family sent money", emoji: "💰", factor: -1 },
-            FAMILY_CC_CHARGE: { label: "You used family CC", emoji: "🏦", factor: -1 }
+            MY_CC_CHARGE: { label: "Family used your CC", emoji: "💳", factor: 1, color: "text-teal-400" },
+            SEND_MONEY: { label: "You sent money", emoji: "💸", factor: 1, color: "text-teal-400" },
+            RECEIVE_MONEY: { label: "Family sent money", emoji: "💰", factor: -1, color: "text-rose-400" },
+            FAMILY_CC_CHARGE: { label: "You used family CC", emoji: "🏦", factor: -1, color: "text-rose-400" }
         };
 
         function toggleModal(show) {
-            document.getElementById('modal').style.display = show ? 'flex' : 'none';
+            const modal = document.getElementById('modal');
+            if (show) {
+                modal.style.display = 'flex';
+                // Trigger reflow
+                void modal.offsetWidth;
+                modal.classList.add('active');
+                // Focus first input
+                setTimeout(() => document.getElementById('desc').focus(), 100);
+            } else {
+                modal.classList.remove('active');
+                setTimeout(() => {
+                    modal.style.display = 'none';
+                    // Clear form
+                    document.getElementById('desc').value = '';
+                    document.getElementById('amt').value = '';
+                    document.getElementById('type').selectedIndex = 0;
+                }, 300);
+            }
         }
 
         function saveTransaction() {
-            const desc = document.getElementById('desc').value;
+            const desc = document.getElementById('desc').value.trim();
             const amt = parseFloat(document.getElementById('amt').value);
             const type = document.getElementById('type').value;
 
-            if (!desc || !amt) return alert("Fill all fields");
+            if (!desc || !amt || amt <= 0) {
+                // Shake animation for error
+                const modalContent = document.querySelector('.modal-content');
+                modalContent.style.animation = 'shake 0.5s';
+                setTimeout(() => modalContent.style.animation = '', 500);
+                return;
+            }
 
             const transactions = JSON.parse(localStorage.getItem('transactions') || '[]');
-            transactions.unshift({
+            const newTransaction = {
                 id: Date.now(),
-                desc, amt, type,
+                desc, 
+                amt, 
+                type,
                 date: new Date().toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })
-            });
-
+            };
+            
+            transactions.unshift(newTransaction);
             localStorage.setItem('transactions', JSON.stringify(transactions));
+            
+            // Close modal with animation
             toggleModal(false);
+            
+            // Render immediately with animation
             render();
-            // Clear inputs
-            document.getElementById('desc').value = '';
-            document.getElementById('amt').value = '';
+            
+            // Scroll to top to show new transaction
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         function deleteTransaction(id) {
-            let transactions = JSON.parse(localStorage.getItem('transactions') || '[]');
-            transactions = transactions.filter(t => t.id !== id);
-            localStorage.setItem('transactions', JSON.stringify(transactions));
-            render();
+            if (!confirm('Delete this transaction?')) return;
+            
+            const element = document.querySelector(`[data-id="${id}"]`);
+            if (element) {
+                element.style.transform = 'translateX(100px)';
+                element.style.opacity = '0';
+                setTimeout(() => {
+                    let transactions = JSON.parse(localStorage.getItem('transactions') || '[]');
+                    transactions = transactions.filter(t => t.id !== id);
+                    localStorage.setItem('transactions', JSON.stringify(transactions));
+                    render();
+                }, 300);
+            }
         }
 
         function render() {
             const transactions = JSON.parse(localStorage.getItem('transactions') || '[]');
             const container = document.getElementById('transactionContainer');
             const emptyState = document.getElementById('emptyState');
+            const countBadge = document.getElementById('transactionCount');
             
+            // Update count
+            countBadge.textContent = transactions.length;
+            
+            // Clear container except empty state
             container.innerHTML = '';
-            emptyState.style.display = transactions.length ? 'none' : 'block';
+            container.appendChild(emptyState);
+            
+            if (transactions.length === 0) {
+                emptyState.style.display = 'block';
+            } else {
+                emptyState.style.display = 'none';
+                
+                let youOwe = 0, theyOwe = 0;
 
-            let youOwe = 0, theyOwe = 0;
+                transactions.forEach((t, index) => {
+                    const config = types[t.type];
+                    if (config.factor === 1) theyOwe += t.amt;
+                    else youOwe += t.amt;
 
-            transactions.forEach(t => {
-                const config = types[t.type];
-                if (config.factor === 1) theyOwe += t.amt;
-                else youOwe += t.amt;
-
-                const card = document.createElement('div');
-                card.className = "glass-card p-4 flex items-center justify-between";
-                card.innerHTML = `
-                    <div class="flex items-center space-x-4">
-                        <span class="text-2xl">${config.emoji}</span>
-                        <div>
-                            <p class="font-bold text-sm">${t.desc}</p>
-                            <p class="text-[10px] opacity-50">${t.date}</p>
+                    const card = document.createElement('div');
+                    card.className = "transaction-item glass-card p-4 flex items-center justify-between group cursor-pointer";
+                    card.setAttribute('data-id', t.id);
+                    card.style.animationDelay = `${index * 0.05}s`;
+                    
+                    const amountClass = config.factor === 1 ? 'text-teal-400' : 'text-rose-400';
+                    const sign = config.factor === 1 ? '+' : '-';
+                    
+                    card.innerHTML = `
+                        <div class="flex items-center space-x-4 flex-1 min-w-0">
+                            <div class="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-2xl flex-shrink-0 border border-white/10 group-hover:border-white/20 transition-colors">
+                                ${config.emoji}
+                            </div>
+                            <div class="min-w-0 flex-1">
+                                <p class="font-semibold text-sm truncate">${t.desc}</p>
+                                <div class="flex items-center gap-2 mt-1">
+                                    <span class="type-badge text-[10px] uppercase tracking-wider opacity-70">
+                                        ${config.label}
+                                    </span>
+                                    <span class="text-[10px] opacity-40">• ${t.date}</span>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                    <div class="text-right">
-                        <p class="font-bold ${config.factor === 1 ? 'text-teal-400' : 'text-red-400'}">₹${t.amt.toFixed(2)}</p>
-                        <button onclick="deleteTransaction(${t.id})" class="text-[10px] text-red-500 font-bold uppercase mt-1">Delete</button>
-                    </div>
-                `;
-                container.appendChild(card);
-            });
+                        <div class="text-right ml-4">
+                            <p class="font-bold text-lg amount-display ${amountClass}">${sign}₹${t.amt.toFixed(2)}</p>
+                            <button onclick="event.stopPropagation(); deleteTransaction(${t.id})" class="delete-btn text-[10px] text-rose-400 font-semibold uppercase tracking-wider hover:text-rose-300 transition-colors mt-1">
+                                Delete
+                            </button>
+                        </div>
+                    `;
+                    
+                    // Add click to delete on mobile (long press alternative)
+                    card.addEventListener('click', () => {
+                        if (window.innerWidth < 768) {
+                            card.querySelector('.delete-btn').style.opacity = '1';
+                            setTimeout(() => {
+                                card.querySelector('.delete-btn').style.opacity = '';
+                            }, 3000);
+                        }
+                    });
+                    
+                    container.appendChild(card);
+                });
 
-            const net = theyOwe - youOwe;
-            const netEl = document.getElementById('netBalance');
-            netEl.innerText = `₹${Math.abs(net).toFixed(2)}`;
-            netEl.style.color = net >= 0 ? '#64FFDA' : '#FF6B6B';
-            
-            const hint = document.getElementById('balanceHint');
-            if (Math.abs(net) < 0.01) hint.innerText = "All Settled Up ✓";
-            else hint.innerText = net > 0 ? "Family owes you" : "You owe family";
-            
-            document.getElementById('youOwe').innerText = `₹${youOwe.toFixed(2)}`;
-            document.getElementById('theyOwe').innerText = `₹${theyOwe.toFixed(2)}`;
+                const net = theyOwe - youOwe;
+                const netEl = document.getElementById('netBalance');
+                const balanceCard = document.querySelector('.balance-card');
+                const hint = document.getElementById('balanceHint');
+                
+                // Animate number change
+                netEl.style.transform = 'scale(1.1)';
+                setTimeout(() => netEl.style.transform = 'scale(1)', 200);
+                
+                netEl.innerText = `₹${Math.abs(net).toFixed(2)}`;
+                
+                // Update balance card styling
+                if (net >= 0) {
+                    balanceCard.classList.remove('negative');
+                    netEl.className = "text-5xl font-bold amount-display transition-all duration-500 bg-gradient-to-r from-teal-300 to-emerald-300 bg-clip-text text-transparent";
+                } else {
+                    balanceCard.classList.add('negative');
+                    netEl.className = "text-5xl font-bold amount-display transition-all duration-500 bg-gradient-to-r from-rose-300 to-orange-300 bg-clip-text text-transparent";
+                }
+                
+                if (Math.abs(net) < 0.01) {
+                    hint.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> All Settled Up ✓';
+                    hint.className = "text-sm font-medium uppercase tracking-wider opacity-80 flex items-center justify-center gap-2 text-emerald-400";
+                } else if (net > 0) {
+                    hint.innerHTML = '<span class="w-2 h-2 rounded-full bg-teal-400 animate-pulse"></span> Family owes you';
+                    hint.className = "text-sm font-medium uppercase tracking-wider opacity-80 flex items-center justify-center gap-2 text-teal-400";
+                } else {
+                    hint.innerHTML = '<span class="w-2 h-2 rounded-full bg-rose-400 animate-pulse"></span> You owe family';
+                    hint.className = "text-sm font-medium uppercase tracking-wider opacity-80 flex items-center justify-center gap-2 text-rose-400";
+                }
+                
+                document.getElementById('youOwe').innerText = `₹${youOwe.toFixed(2)}`;
+                document.getElementById('theyOwe').innerText = `₹${theyOwe.toFixed(2)}`;
+            }
         }
+
+        // Add shake animation keyframes
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes shake {
+                0%, 100% { transform: translateX(0); }
+                25% { transform: translateX(-10px); }
+                75% { transform: translateX(10px); }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Handle escape key to close modal
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') toggleModal(false);
+        });
+
+        // Handle enter key in form
+        document.getElementById('amt').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') saveTransaction();
+        });
 
         // PWA Service Worker Registration
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('sw.js').catch(() => {});
         }
 
+        // Initial render
         render();
     </script>
 </body>
